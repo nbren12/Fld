@@ -388,7 +388,7 @@ def fld_to_hdf5():
         dat = fd(1)
 
         # Write Grid
-        f.create_dataset('w', data=dat['data']['uX'])
+        # f.create_dataset('w', data=dat['data']['uX'])
         f.create_dataset('x', data=dat['data']['x'])
         f.create_dataset('y', data=dat['data']['y'])
         if 'z' in dat['data']:
