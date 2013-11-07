@@ -45,6 +45,7 @@
 # whatsoever. Use at your own risk.
 
 from __future__ import print_function
+from IPython import embed
 import numpy as np
 import os
 import re
@@ -240,13 +241,25 @@ class Fld:
             s= f.read(80)
 
         s_split = filter(lambda x : len(x) != 0 , s.split(' '))
+
+        fields = []
+        for tok in s_split[6:]:
+            try:
+                int(tok)
+                break
+            except:
+                fields.append(tok)
+
+
         H = dict((
             ('nelt',int(s_split[0])),
-            ('shape',[ int(ss) for ss in s_split[1:4] ]),
-            ('s',s)
+            ('block_shape',[ int(ss) for ss in s_split[1:4] ]),
+            ('header_string',s),
+            ('fields', fields)
             ))
 
-        H['nxyz'] = np.prod(H['shape'])
+
+        H['nxyz'] = np.prod(H['block_shape'])
 
         time = float(s_split[4])
         frame = int(s_split[5])
@@ -256,58 +269,57 @@ class Fld:
         self._header = H
         self.time = time
         self.frame = frame
-        self.n = np.prod(self.get_shape())
-
-    def get_shape(self):
-        return self._header['shape']
-
-    def get_nelt(self):
-        return self._header[ 'nelt' ]
-
-class GridFld(Fld):
-    def get_grid(self):
-        if not hasattr(self,'_header'):
-            self.read_header()
-        with  open(self.fname,'r') as f:
-            f.seek(84)
-            a = np.fromfile(f,dtype=np.float32)
-
-        a = np.reshape(a,self.get_shape()+[6,self.get_nelt()],order='F')
-
-        self._x = grid_to_3d( a[:,:,:,0,:])[:,0]
-        self._y = grid_to_3d( a[:,:,:,1,:])[0,:]
-        self._w = grid_to_3d( a[:,:,:,2,:])
-        out = dict((
-            ('x',self._x),
-            ('y',self._y),
-            ('w',self._w)
-            ))
-        return out
-
-class DataFld(Fld):
-    def load_data(self):
-        if not hasattr(self,'_header'):
-            self.read_header()
-        with  open(self.fname,'r') as f:
-            f.seek(84)
-            a = np.fromfile(f,dtype=np.float32)
-
-        a = np.reshape(a,self.get_shape()+[4,self.get_nelt()],order='F')
-
-        self._uX = grid_to_3d( a[:,:,:,0,:] )
-        self._uY = grid_to_3d( a[:,:,:,1,:] )
-        self._T = grid_to_3d( a[:,:,:,3,:] )
 
     def get_data(self):
-        out =  dict((
-            ('uX',self._uX ),
-            ( 'uY',self._uY ),
-            ( 'T',self._T )
-            ))
-        return out
+        if not hasattr(self,'_header'):
+            self.read_header()
 
-    def get_time(self):
-        return (self.time,self.frame)
+        nelt = self.nelt
+        fields = self.fields
+        nx,ny,nz = self.block_shape
+
+        dat = {}
+        with  open(self.fname,'r') as f:
+            f.seek(84)
+
+            data = np.fromfile(f,dtype=np.float32)
+
+            nf = data.shape[0]/(nx * ny * nz * nelt)
+            ntot = nf * (nx * ny * nz * nelt)
+            rs   = np.reshape(data[:ntot],(nx,ny,nz, nf, nelt), order='F')
+            del data
+
+
+        i = 0
+        for k in fields:
+            if k == 'X':
+                dat['x'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+            elif k == 'Y':
+                dat['y'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+            elif k == 'Z':
+                dat['z'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+            elif k == 'U':
+                dat['uX'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+                dat['uY'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+                if nz > 1:
+                    dat['uZ'] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                    i+=1
+
+            elif k!='P':
+                dat[k] = rs[:,:,:,i,:].transpose((3,0,1,2))
+                i+=1
+
+        return dat
 
 ###########################################################################
 #                             Other Functions                             #
