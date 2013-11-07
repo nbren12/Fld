@@ -9,6 +9,7 @@ A script and classes to convert Parallel nek5000 fld files to hdf5.
 ## Installation:
 
  Install the Requirements above, then run
+
     python setup.py install
 
  Alternatively, you can just place this file in your working directory and run
@@ -16,11 +17,11 @@ A script and classes to convert Parallel nek5000 fld files to hdf5.
 
 ## Usage:
 
-Type python Fld.py -h to see the command line usage
+Type `python Fld.py -h` to see the command line usage
 
 Here is an example:
 
-python Fld.py -n 2 -p ray -d ./ -o out.hdf5
+    python Fld.py -n 2 -p ray -d ./ -o out.hdf5
 
 The dimension of the arrays (in fortran order) are (nz, ny, nx, nelt, nt).
 
