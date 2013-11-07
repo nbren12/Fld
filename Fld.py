@@ -85,16 +85,12 @@ class FldFolder:
         return get_file_list(self.folder,self.nameBase,parallel =False)
 
     def get_data(self,i):
-        fld = DataFld(self.file_list[i-1])
-        fld.load_data()
-        time, cycle = fld.get_time()
-        out = dict((
-            ('data',fld.get_data()),
-            ('time',time),
-            ('cycle',cycle),
-            ('shape',fld.get_shape()),
-            ('nelt',fld.get_nelt())
-            ))
+        fld = Fld(self.file_list[i-1])
+        out = dict(data=fld.get_data(),
+                time=fld.time,
+                cycle=fld.cycle,
+                nelt =fld.nelt,
+                )
 
         return out
 
@@ -122,16 +118,6 @@ class ParallelFldFolder(FldFolder):
                 nelt =fld.nelt,
                 )
         return out
-
-    def get_grid(self):
-        fld = ParallelFld(self.file_list[0])
-        data = fld.get_data()
-        grid = dict(
-                x=data['x'][:,0],
-                y=data['y'][0,:],
-                w=data['uX']
-                )
-        return grid
 
 ###########################################################################
 #                            Fld File Parsers                             #
@@ -262,13 +248,13 @@ class Fld:
         H['nxyz'] = np.prod(H['block_shape'])
 
         time = float(s_split[4])
-        frame = int(s_split[5])
+        cycle = int(s_split[5])
 
         self.__dict__.update(H)
 
-        self._header = H
         self.time = time
-        self.frame = frame
+        self.cycle = cycle
+        self._header = H
 
     def get_data(self):
         if not hasattr(self,'_header'):
@@ -398,6 +384,7 @@ def fld_to_hdf5():
     parser.add_argument('-p',dest='prefix', type=str)
     parser.add_argument('-d',dest='fld',default='./')
     parser.add_argument('-o',dest='out',default='./')
+    parser.add_argument('--serial', dest = "serial", action='store_true', default =False )
 
     args = parser.parse_args()
 
@@ -405,10 +392,14 @@ def fld_to_hdf5():
     prefix = args.prefix
     nt   = args.nt
     out   = args.out
+    serial = args.serial
 
     import h5py
 
-    fd = ParallelFldFolder(fld, nameBase=prefix)
+    if serial:
+        fd = FldFolder(fld, nameBase=prefix)
+    else:
+        fd = ParallelFldFolder(fld, nameBase=prefix)
 
     with h5py.File(out) as f:
         dat = fd(1)
@@ -441,7 +432,10 @@ def fld_to_hdf5():
     num_sample = nt
     chunk_size = min( 10000, num_sample )
     for i_start in range(startind, startind+num_sample, chunk_size):
-        fd = ParallelFldFolder(fld, nameBase=prefix)
+        if serial:
+            fd = FldFolder(fld, nameBase=prefix)
+        else:
+            fd = ParallelFldFolder(fld, nameBase=prefix)
         tmp = {k:[] for k in names}
         i_end =  min(i_start + chunk_size,num_sample + i_start )
         h5_start = i_start - startind
