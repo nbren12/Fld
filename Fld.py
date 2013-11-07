@@ -29,11 +29,10 @@
 #
 # Caveats:
 #
-# The scripts uses globing to match all relevant files in the folder.
+# The scripts uses globing to match all relevant files in the specified folder.
 # Therefore, the first file in the directory (e.g. ray15.f00001) should contain
-# the mesh. This code does not guess what array stores the mass matrix, and
-# merely transcribes the data. This writes and hdf5 file with clearly named
-# datasets.
+# the mesh. This code does not guess which array stores the mass matrix, and
+# merely transcribes the data.
 #
 # API:
 #
@@ -41,7 +40,9 @@
 # modify and use.
 #
 # Disclaimer:
-# There are almost surely bugs, and you use it at your own risk.
+#
+# This code almost surely contains bugs, and is provided with no warranty
+# whatsoever. Use at your own risk.
 
 from __future__ import print_function
 import numpy as np
