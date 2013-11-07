@@ -2,7 +2,7 @@
 # Author: Noah D. Brenowitz
 # Email : noah@cims.nyu.edu
 #
-# This file contains classes for reading both parallel and serial format
+# This file contains classes for reading the parallel format of
 # Nek5000 files. Moreover, when used as a command line script it enables
 # writing a folder of fld files into an easily readable hdf5 file.
 #
@@ -11,10 +11,11 @@
 #
 # Installation:
 #
-# It can be a bit difficult to install python so for the time being you can
-# just use my install. Let me know if you get permission denied:
+# Install the Requirements above, then run
+#    python setup.py install
 #
-# source /home/noah/usr/python-env/bin/activate
+# Alternatively, you can just place this file in your working directory and run
+# it as below.
 #
 # Usage:
 #
@@ -24,11 +25,23 @@
 #
 # python Fld.py -n 2 -p ray -d ./ -o out.hdf5
 #
-# This writes and hdf5 file with clearly named datasets. The dimension of the
-# arrays (in fortran order) are (nz, ny, nx, nelt, nt).
+# The dimension of the arrays (in fortran order) are (nz, ny, nx, nelt, nt).
+#
+# Caveats:
+#
+# The scripts uses globing to match all relevant files in the folder.
+# Therefore, the first file in the directory (e.g. ray15.f00001) should contain
+# the mesh. This code does not guess what array stores the mass matrix, and
+# merely transcribes the data. This writes and hdf5 file with clearly named
+# datasets.
+#
+# API:
+#
+# The classes for reading Fld are not documented, but should be pretty easy to
+# modify and use.
 #
 # Disclaimer:
-# There are almost surely bugs.
+# There are almost surely bugs, and you use it at your own risk.
 
 from __future__ import print_function
 import numpy as np
