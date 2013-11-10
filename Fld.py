@@ -436,10 +436,15 @@ def fld_to_hdf5():
             fd = FldFolder(fld, nameBase=prefix)
         else:
             fd = ParallelFldFolder(fld, nameBase=prefix)
-        tmp = {k:[] for k in names}
         i_end =  min(i_start + chunk_size,num_sample + i_start )
+        ns_cur = i_end-i_start
         h5_start = i_start - startind
-        h5_end   = i_end - startind
+        h5_end   = h5_start + i_end
+
+        tmpshp = outsh
+        tmpshp[0] = ns_cur
+
+        tmp = {k:[0]*(np.empty(tmpshp)) for k in names}
 
         for i in range(i_start, i_end):
             fdi = fd(i)
@@ -447,15 +452,17 @@ def fld_to_hdf5():
             t = fdi['time']
             for k,l in data.iteritems():
                 if k in names:
-                    tmp[k].append( l[None,...])
+                    tmp[k][i-i_start, ...] = l
                     times[i-startind] = t
+
 
         del fdi, fd, data, l
         print ( "Flushing  Iteration %d"%(i) )
         for k,l in tmp.iteritems():
             with h5py.File(out) as f:
                 if len(l) > 0:
-                    f[k][h5_start:h5_end,...] = np.concatenate( l )
+                    ns = len(l)
+                    f[k][h5_start:h5_end,...] = l
                     f.flush()
         print("done")
 
